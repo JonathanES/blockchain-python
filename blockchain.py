@@ -68,3 +68,7 @@ if __name__ == "__main__":
     print(f"Transaction: {transaction2}, Valid: {isValidTransaction(transaction2, state)}")
     print(f"Transaction: {transaction3}, Valid: {isValidTransaction(transaction3, state)}")
     print(f"Transaction: {transaction4}, Valid: {isValidTransaction(transaction4, state)}")
+
+    if isValidTransaction(transaction4, state):
+        state = updateState(transaction4, state)
+    print(f"updated state: {state}")
