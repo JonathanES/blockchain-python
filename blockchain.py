@@ -92,6 +92,54 @@ def makeBlock(transactions, chain):
     block = {"hash": blockHash, "contents": blockContents}
     return block
 
+def checkBlockHash(block):
+    expectedHash = hashMe(block["contents"])
+    if expectedHash != block["hash"]:
+        raise Exception(f"Hash does not match for block {block["contents"]["blockNumber"]}. Expected {expectedHash}, got {block["hash"]}")
+    return
+
+def checkBlockValidity(block, parent, state):
+    parentNumber = parent["contents"]["blockNumber"]
+    parentHash = parent["hash"]
+    blockNumber = block["contents"]["blockNumber"]
+
+    for transaction in block["contents"]["transactions"]:
+        if isValidTransaction(transaction, state):
+            state = updateState(transaction, state)
+        else:
+            raise Exception(f"Transaction {transaction} in block {blockNumber}")
+    checkBlockHash(block)
+
+    if blockNumber != parentNumber + 1:
+        raise Exception(f"Block {blockNumber} is not the next block after {parentNumber}")
+    
+    if block["contents"]["parentHash"] != parentHash:
+        raise Exception(f"Block {blockNumber} does not have the correct parent hash. Expected {parentHash}, got {block["contents"]["parentHash"]}")
+    
+    return state
+
+def checkChain(chain):
+    if type(chain) == str:
+        try:
+            chain = json.loads(chain)
+            assert type(chain) == list
+        except:
+            return False
+    elif type(chain) != list:
+        return False
+    
+    state = {}
+
+    for transaction in chain[0]["contents"]["transactions"]:
+        state = updateState(transaction, state)
+    
+    checkBlockHash(chain[0])
+    parent = chain[0]
+
+    for block in chain[1:]:
+        state = checkBlockValidity(block, parent, state)
+        parent = block
+    return state
 if __name__ == "__main__":
     state = {'Jonathan': 1000, 'Philippe': 1000}  # Initial balances
     chain = initBlockChain(state)
@@ -116,4 +164,5 @@ if __name__ == "__main__":
         chain.append(newBlock)
         print(f"Block {newBlock['contents']['blockNumber']} created with {len(transactionList)} transactions")
     print(chain)
+    state = checkChain(chain)
     print(state)
