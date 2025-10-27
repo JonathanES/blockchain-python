@@ -17,7 +17,7 @@ def makeTransaction(maxValue = 1000):
     jonathanAmount = sign * amount
     philippeAmount = -1 * jonathanAmount
 
-    return {u'Jonathan': jonathanAmount, u'philippeAmount': philippeAmount}
+    return {u'Jonathan': jonathanAmount, u'Philippe': philippeAmount}
 
 def updateState(transaction, state):
     """
@@ -54,21 +54,66 @@ def isValidTransaction(transaction, state):
     
     return True
 
+def initBlockChain(state):
+    genesisBlockTransactions = [state]
+    genesisBlockContents = {
+            'blockNumber': 0,
+            'parentHash': None,
+            'transactionCount': 1,
+            'transactions': genesisBlockTransactions
+    }
+    genesisHash = hashMe(genesisBlockContents)
+    genesisBlock = {'hash': genesisHash, 'contents': genesisBlockContents}
+    return [genesisBlock]
+
+
+def makeBlock(transactions, chain):
+    """
+    Inputs:
+        transactions: a list of transactions to include in the block
+        chain: the current blockchain (a list of existing blocks)
+    Outputs:
+        block: a dictionary representing the new block, including it's hash and its content
+    """
+    parentBlock = chain[-1]
+    parentHash = parentBlock["hash"]
+    blockNumber = parentBlock["contents"]["blockNumber"] + 1
+    transactionCount = len(transactions)
+
+    blockContents = {
+        "blockNumber": blockNumber,
+        "parentHash": parentHash,
+        "transactionCount": transactionCount,
+        "transactions": transactions
+    }
+    
+    blockHash = hashMe(blockContents)
+
+    block = {"hash": blockHash, "contents": blockContents}
+    return block
+
 if __name__ == "__main__":
     state = {'Jonathan': 1000, 'Philippe': 1000}  # Initial balances
+    chain = initBlockChain(state)
     print(f"Initial State: {state}")
+    transactionBuffer = [makeTransaction() for _ in range(100)]
 
-    # Test different transactions
-    transaction1 = {'Jonathan': -800, 'Philippe': 800}
-    transaction2 = {'Jonathan': 1500, 'Philippe': -1500}
-    transaction3 = {'Jonathan': -400, 'Philippe': 600}
-    transaction4 = {'Jonathan': -500, 'Philippe': 250, 'Kung': 250}
-    # Check if transactions are valid
-    print(f"Transaction: {transaction1}, Valid: {isValidTransaction(transaction1, state)}")
-    print(f"Transaction: {transaction2}, Valid: {isValidTransaction(transaction2, state)}")
-    print(f"Transaction: {transaction3}, Valid: {isValidTransaction(transaction3, state)}")
-    print(f"Transaction: {transaction4}, Valid: {isValidTransaction(transaction4, state)}")
+    blockSizeLimit = 10 # maximum number of transactions allowed in a block
+    while len(transactionBuffer):
+        transactionList = []
+        while len(transactionList) < blockSizeLimit:
+            if not transactionBuffer:
+                break
+            transaction = transactionBuffer.pop()
 
-    if isValidTransaction(transaction4, state):
-        state = updateState(transaction4, state)
-    print(f"updated state: {state}")
+            if isValidTransaction(transaction, state):
+                transactionList.append(transaction)
+                state = updateState(transaction, state)
+            else:
+                print(f"Transaction {transaction} is invalid")
+                continue
+        newBlock = makeBlock(transactionList, chain)
+        chain.append(newBlock)
+        print(f"Block {newBlock['contents']['blockNumber']} created with {len(transactionList)} transactions")
+    print(chain)
+    print(state)
