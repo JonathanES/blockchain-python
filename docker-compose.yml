@@ -1,7 +1,14 @@
-version: '3.8'
 services:
-  blockchain:
-    build: .
-    volumes:
-      - .:/app
+  redis:
+    image: "redis:alpine"
 
+  blockchain-service:
+    build:
+      context: ./blockchain-service
+      dockerfile: Dockerfile
+    container_name: blockchain-service
+    volumes:
+      - ./blockchain-service:/app
+    ports:
+      - "8000:8000"
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
